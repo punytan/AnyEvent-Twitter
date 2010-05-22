@@ -34,16 +34,15 @@ sub request {
     if ($opt{url}) {
         $url = $opt{url};
     } else {
-        if ($opt{api}) {
-            $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
-        } else {
-            Carp::croak "'api' or 'url' option is required";
-        }
+        $opt{api} ? $url = 'http://api.twitter.com/1/' . $opt{api} . '.json'
+                  : Carp::croak "'api' or 'url' option is required"
+                  ;
     }
 
-    $opt{method} =~ /^(GET|POST)$/i || Carp::croak "'method' option is required.";
+    ref($cb) eq 'CODE'              || Carp::croak "coderef argument is required";
+    $opt{method} =~ /^(GET|POST)$/i || Carp::croak "'method' option is required";
 
-    my %params = ();
+    my %params;
     %params = %{$opt{params}} if ($opt{params});
 
     my $req = $self->_make_oauth_request(
@@ -54,7 +53,7 @@ sub request {
 
     my $req_url;
 
-    my %req_params = ();
+    my %req_params;
     if ($opt{method} =~ /POST/i) {
         $req_params{body} = $req->to_post_body;
         $req_url = $req->normalized_request_url();
@@ -66,9 +65,7 @@ sub request {
         my ($body, $hdr) = @_;
 
         if ($hdr->{Status} =~ /^2/) {
-            my $json;
-            eval { $json = decode_json($body); };
-
+            my $json = eval { decode_json($body); };
             $@ ? $cb->($hdr, undef, $@) : $cb->($hdr, $json, $hdr->{Reason}) ;
         }
         else {
@@ -130,8 +127,9 @@ AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
             unless ($res) {
                 print $reason, "\n";
             }
-
-            print $res->{screen_name}, "\n";
+            else {
+                print $res->{screen_name}, "\n";
+            }
         }
     );
     $ua->request(
