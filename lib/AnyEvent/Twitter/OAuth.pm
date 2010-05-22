@@ -211,8 +211,9 @@ $hdr, $response and $reason will be returned. If error has occured, $response wi
         unless ($res) {
             print $reason, "\n";
         }
-
-        print $res->{screen_name}, "\n";
+        else {
+            print $res->{screen_name}, "\n";
+        }
     }
 
 =back
