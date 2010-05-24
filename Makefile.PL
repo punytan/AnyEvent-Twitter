@@ -4,6 +4,7 @@ all_from 'lib/AnyEvent/Twitter/OAuth.pm';
 
 requires 'JSON';
 requires 'Net::OAuth';
+requires 'Net::Twitter::Lite'; # for eg/gen_token.pl
 requires 'Digest::SHA';
 requires 'AnyEvent';
 requires 'AnyEvent::HTTP';
