@@ -117,6 +117,14 @@ AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
         access_token_secret => 'access_token_secret',
     );
 
+    # if you use eg/gen_token.pl, simply as:
+    #
+    # use JSON;
+    # use Perl6::Slurp;
+    # my $json_text = slurp 'config.json';
+    # my $config = decode_json($json_text);
+    # my $ua = AnyEvent::Twitter::OAuth->new(%$config);
+
     my $cv = AE::cv;
     $ua->request(
         api    => 'account/verify_credentials',
@@ -163,7 +171,7 @@ AnyEvent::Twitter::OAuth is a very thin wrapper for Twitter API using OAuth.
 =head2 new
 
 All arguments are required.
-If you don'n know how to obtain these parameters, take a look at http://gist.github.com/209368 and run it.
+If you don'n know how to obtain these parameters, take a look at eg/gen_token.pl and run it.
 
 =over 4
 
