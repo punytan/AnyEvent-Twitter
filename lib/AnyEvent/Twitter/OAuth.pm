@@ -2,6 +2,7 @@ package AnyEvent::Twitter::OAuth;
 use strict;
 use warnings;
 use utf8;
+use 5.008;
 use Encode;
 our $VERSION = '0.01';
 
