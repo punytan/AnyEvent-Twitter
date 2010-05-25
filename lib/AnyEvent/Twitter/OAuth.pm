@@ -136,7 +136,9 @@ AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
                 print $reason, "\n";
             }
             else {
-                print $res->{screen_name}, "\n";
+                print "ratelimit-remaining : ", $hdr->{'x-ratelimit-remaining'}, "\n",
+                      "x-ratelimit-reset   : ", $hdr->{'x-ratelimit-reset'}, "\n",
+                      "screen_name         : ", $res->{screen_name}, "\n";
             }
         }
     );
@@ -171,7 +173,7 @@ AnyEvent::Twitter::OAuth is a very thin wrapper for Twitter API using OAuth.
 =head2 new
 
 All arguments are required.
-If you don'n know how to obtain these parameters, take a look at eg/gen_token.pl and run it.
+If you don't know how to obtain these parameters, take a look at eg/gen_token.pl and run it.
 
 =over 4
 
@@ -211,7 +213,7 @@ Investigate the HTTP method of Twitter API that you want to use. Then specify it
 
 This module is AnyEvent::http_request style, so you have to pass the coderef callback.
 
-$hdr, $response and $reason will be returned. If error has occured, $response will be undef. So you can check the value like below.
+$hdr, $response and $reason will be returned. If something is wrong with the response, $response will be undef. So you can check the value like below.
 
     sub {
         my ($hdr, $res, $reason) = @_;

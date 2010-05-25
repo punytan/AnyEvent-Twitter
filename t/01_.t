@@ -1,5 +1,5 @@
 use strict;
-use Test::More;
+use Test::More tests => 1;
 
 use AnyEvent::Twitter::OAuth;
 

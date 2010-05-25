@@ -8,3 +8,10 @@ __DATA__
 punytan
 punytan@gmail.com
 AnyEvent::Twitter::OAuth
+API
+api
+callback
+JSON
+json
+HTTP
+url
