@@ -100,6 +100,8 @@ sub _make_oauth_request {
 1;
 __END__
 
+=encoding utf-8
+
 =head1 NAME
 
 AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
@@ -168,6 +170,12 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
 =head1 DESCRIPTION
 
 AnyEvent::Twitter is a very thin wrapper for Twitter API using OAuth.
+
+NOTE :
+
+With the removal of basic authentication, the API of this module is different from older version.
+
+Be careful to upgrade if you are using older version.
 
 =head1 METHODS
 
