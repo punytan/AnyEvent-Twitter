@@ -18,12 +18,12 @@ sub new {
     my $class = shift;
     my %args  = @_;
 
-    $args{consumer_key}        || Carp::croak "consumer_key is needed";
-    $args{consumer_secret}     || Carp::croak "consumer_secret is needed";
-    $args{access_token}        || Carp::croak "access_token is needed";
-    $args{access_token_secret} || Carp::croak "access_token_secret is needed";
+    $args{consumer_key}        or croak "consumer_key is needed";
+    $args{consumer_secret}     or croak "consumer_secret is needed";
+    $args{access_token}        or croak "access_token is needed";
+    $args{access_token_secret} or croak "access_token_secret is needed";
 
-    bless \%args, $class;
+    return bless \%args, $class;
 }
 
 sub request {
@@ -32,32 +32,28 @@ sub request {
     my %opt  = @_;
 
     my $url;
-    if ($opt{url}) {
+    if (defined $opt{url}) {
         $url = $opt{url};
+    } elsif (defined $opt{api}) {
+        $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
     } else {
-        $opt{api} ? $url = 'http://api.twitter.com/1/' . $opt{api} . '.json'
-                  : Carp::croak "'api' or 'url' option is required"
-                  ;
+        croak "'api' or 'url' option is required";
     }
 
-    ref($cb) eq 'CODE'              || Carp::croak "coderef argument is required";
-    $opt{method} =~ /^(GET|POST)$/i || Carp::croak "'method' option is required";
-
-    my %params;
-    %params = %{$opt{params}} if ($opt{params});
+    ref $cb eq 'CODE'                 or croak "callback coderef is required";
+    $opt{method} =~ /^(?:GET|POST)$/i or croak "'method' option is required";
 
     my $req = $self->_make_oauth_request(
         request_url    => $url,
         request_method => $opt{method},
-        extra_params   => \%params,
+        extra_params   => $opt{params},
     );
 
     my $req_url;
-
     my %req_params;
-    if ($opt{method} =~ /POST/i) {
+    if (uc $opt{method} eq 'POST') {
         $req_params{body} = $req->to_post_body;
-        $req_url = $req->normalized_request_url();
+        $req_url = $req->normalized_request_url;
     } else {
         $req_url = $req->to_url;
     }
@@ -66,13 +62,15 @@ sub request {
         my ($body, $hdr) = @_;
 
         if ($hdr->{Status} =~ /^2/) {
-            my $json = eval { decode_json($body); };
-            $@ ? $cb->($hdr, undef, $@) : $cb->($hdr, $json, $hdr->{Reason}) ;
-        }
-        else {
+            local $@;
+            my $json = eval { decode_json($body) };
+            $cb->($hdr, $json, $@ ? "parse error: $@" : $hdr->{Reason}) ;
+        } else {
             $cb->($hdr, undef, $hdr->{Reason});
         }
     });
+
+    return $self;
 }
 
 sub _make_oauth_request {
@@ -94,7 +92,7 @@ sub _make_oauth_request {
     );
     $req->sign;
 
-    $req;
+    return $req;
 }
 
 1;
