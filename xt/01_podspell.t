@@ -7,7 +7,8 @@ all_pod_files_spelling_ok('lib');
 __DATA__
 punytan
 punytan@gmail.com
-AnyEvent::Twitter::OAuth
+AnyEvent::Twitter
+OAuth
 API
 api
 callback

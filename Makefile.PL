@@ -1,6 +1,6 @@
 use inc::Module::Install;
-name 'AnyEvent-Twitter-OAuth';
-all_from 'lib/AnyEvent/Twitter/OAuth.pm';
+name 'AnyEvent-Twitter';
+all_from 'lib/AnyEvent/Twitter.pm';
 
 requires 'JSON';
 requires 'Net::OAuth';

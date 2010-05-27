@@ -1,4 +1,4 @@
-package AnyEvent::Twitter::OAuth;
+package AnyEvent::Twitter;
 use strict;
 use warnings;
 use utf8;
@@ -102,16 +102,16 @@ __END__
 
 =head1 NAME
 
-AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
+AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
 
 =head1 SYNOPSIS
 
     use utf8;
     use Data::Dumper;
     use AnyEvent;
-    use AnyEvent::Twitter::OAuth;
+    use AnyEvent::Twitter;
 
-    my $ua = AnyEvent::Twitter::OAuth->new(
+    my $ua = AnyEvent::Twitter->new(
         consumer_key        => 'consumer_key',
         consumer_secret     => 'consumer_secret',
         access_token        => 'access_token',
@@ -124,7 +124,7 @@ AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
     # use Perl6::Slurp;
     # my $json_text = slurp 'config.json';
     # my $config = decode_json($json_text);
-    # my $ua = AnyEvent::Twitter::OAuth->new(%$config);
+    # my $ua = AnyEvent::Twitter->new(%$config);
 
     my $cv = AE::cv;
     $ua->request(
@@ -167,7 +167,7 @@ AnyEvent::Twitter::OAuth - A thin wrapper for Twitter API using OAuth
 
 =head1 DESCRIPTION
 
-AnyEvent::Twitter::OAuth is a very thin wrapper for Twitter API using OAuth.
+AnyEvent::Twitter is a very thin wrapper for Twitter API using OAuth.
 
 =head1 METHODS
 
