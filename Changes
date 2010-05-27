@@ -1,4 +1,29 @@
 Revision history for Perl extension AnyEvent::Twitter
 
-0.01    Wed May 19 10:15:58 2010
-        - original version
+0.5     Thu May 27 23:15:33 JST 2010
+        - With the removal of basic authentication,
+          the API of this module is different from older version.
+
+0.3     Thu Nov  5 00:09:11 CET 2009
+        - requiring new Object::Event API.
+        - fixed bug with 400 status, thanks to some weird Japanese forum.
+
+0.26    Fri Sep 11 23:08:36 CEST 2009
+        - removed 'count' parameter, it was defunct anyways.
+          Now as many status updates as possible are fetched when
+          no state exists yet.
+        - added unix timestamp decoding.
+
+0.25    Thu Sep  3 14:29:12 CEST 2009
+        - implemented mentions.  Thanks go to Nuno Nunes
+          (nfmnunes @ CPAN) for the initial patch.
+
+0.21    Tue Aug 11 08:37:27 CEST 2009
+        - added common::sense to prereq.
+
+0.2     Mon Aug 10 10:07:28 CEST 2009
+        - fixed some missing documentation.
+        - using common::sense for all scripts and modules.
+
+0.1     Mon Jul 13 09:13:53 CEST 2009
+        - initial release
