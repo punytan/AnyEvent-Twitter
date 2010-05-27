@@ -18,10 +18,10 @@ sub new {
     my $class = shift;
     my %args  = @_;
 
-    $args{consumer_key}        or croak "consumer_key is needed";
-    $args{consumer_secret}     or croak "consumer_secret is needed";
-    $args{access_token}        or croak "access_token is needed";
-    $args{access_token_secret} or croak "access_token_secret is needed";
+    defined $args{consumer_key}        or croak "consumer_key is needed";
+    defined $args{consumer_secret}     or croak "consumer_secret is needed";
+    defined $args{access_token}        or croak "access_token is needed";
+    defined $args{access_token_secret} or croak "access_token_secret is needed";
 
     return bless \%args, $class;
 }
@@ -40,8 +40,11 @@ sub request {
         croak "'api' or 'url' option is required";
     }
 
-    ref $cb eq 'CODE'                 or croak "callback coderef is required";
-    $opt{method} =~ /^(?:GET|POST)$/i or croak "'method' option is required";
+    ref $cb eq 'CODE'    or croak "callback coderef is required";
+    defined $opt{method} or croak "'method' option is required";
+
+    $opt{method} = uc $opt{method};
+    $opt{method} =~ /^(?:GET|POST)$/ or croak "'method' option should be GET or POST";
 
     my $req = $self->_make_oauth_request(
         request_url    => $url,
@@ -51,7 +54,7 @@ sub request {
 
     my $req_url;
     my %req_params;
-    if (uc $opt{method} eq 'POST') {
+    if ($opt{method} eq 'POST') {
         $req_params{body} = $req->to_post_body;
         $req_url = $req->normalized_request_url;
     } else {
