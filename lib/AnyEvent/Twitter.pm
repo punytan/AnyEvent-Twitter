@@ -130,6 +130,8 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
     # my $ua = AnyEvent::Twitter->new(%$config);
 
     my $cv = AE::cv;
+
+    $cv->begin;
     $ua->request(
         api    => 'account/verify_credentials',
         method => 'GET',
@@ -144,8 +146,11 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
                       "x-ratelimit-reset   : ", $hdr->{'x-ratelimit-reset'}, "\n",
                       "screen_name         : ", $res->{screen_name}, "\n";
             }
+            $cv->end;
         }
     );
+
+    $cv->begin;
     $ua->request(
         api => 'statuses/update',
         method => 'POST',
@@ -154,8 +159,11 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
         },
         sub {
             print Dumper \@_;
+            $cv->end;
         }
     );
+
+    $cv->begin;
     $ua->request(
         url => 'http://api.twitter.com/1/statuses/update.json',
         method => 'POST',
@@ -164,6 +172,7 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
         },
         sub {
             print Dumper \@_;
+            $cv->end;
         }
     );
     $cv->recv;
