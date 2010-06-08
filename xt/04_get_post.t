@@ -7,11 +7,16 @@ use JSON;
 use Perl6::Slurp;
 use Test::More;
 
-my $json_text = slurp './xt/config.json';
-my $config    = decode_json($json_text);
+my $config;
+
+if (-f './xt/config.json') {
+    my $json_text = slurp './xt/config.json';
+    $config = decode_json($json_text);
+} else {
+    plan skip_all => 'There is no setting file for testing';
+}
 
 my $screen_name = $config->{screen_name};
-
 
 my $ua = AnyEvent::Twitter->new(%$config);
 
