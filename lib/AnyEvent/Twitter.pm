@@ -247,6 +247,20 @@ $hdr, $response and $reason will be returned. If something is wrong with the res
 
 =back
 
+=head1 CONTRIBUTORS
+
+=over 4
+
+=item ramusara
+
+He gave me plenty of test code.
+
+=item Hideki Yamamura
+
+He cleaned my code up.
+
+=back
+
 =head1 AUTHOR
 
 punytan E<lt>punytan@gmail.comE<gt>
