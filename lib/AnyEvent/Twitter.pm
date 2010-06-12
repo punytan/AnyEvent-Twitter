@@ -222,11 +222,11 @@ The api parameter will be internally processed as:
 
     $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
 
-You can check the api option at http://apiwiki.twitter.com/Twitter-API-Documentation
+You can check the api option at L<Twitter API Wiki|http://apiwiki.twitter.com/Twitter-API-Documentation>
 
 =item method
 
-Investigate the HTTP method of Twitter API that you want to use. Then specify it.
+Investigate the HTTP method of Twitter API that you want to use. Then specify it. GET/POST methods are allowed.
 
 =item callback
 
