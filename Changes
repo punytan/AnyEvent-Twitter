@@ -1,5 +1,8 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.51    Sat Jun 12 16:11:59 JST 2010
+        - Cleaned up, added some tests and modified POD.
+
 0.5     Thu May 27 23:15:33 JST 2010
         - With the removal of basic authentication,
           the API of this module is different from older version.
