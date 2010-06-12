@@ -4,8 +4,9 @@ use Encode;
 use AnyEvent;
 use AnyEvent::Twitter;
 use JSON;
-use Perl6::Slurp;
 use Test::More;
+eval q{ use Perl6::Slurp };
+plan skip_all => "Perl6::Slurp is not installed." if $@;
 
 my $config;
 
