@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 use 5.008;
 use Encode;
-our $VERSION = '0.51';
+our $VERSION = '0.52';
 
 use Carp;
 use JSON;
@@ -18,12 +18,66 @@ sub new {
     my $class = shift;
     my %args  = @_;
 
+    if (defined $args{token}) {
+        $args{access_token} = $args{token};
+    }
+
+    if (defined $args{token_secret}) {
+        $args{access_token_secret} = $args{token_secret};
+    }
+
     defined $args{consumer_key}        or croak "consumer_key is needed";
     defined $args{consumer_secret}     or croak "consumer_secret is needed";
     defined $args{access_token}        or croak "access_token is needed";
     defined $args{access_token_secret} or croak "access_token_secret is needed";
 
     return bless \%args, $class;
+}
+
+sub get {
+    my $self = shift;
+    my $api  = shift;
+    my $cb   = pop;
+    my $params = shift;
+
+    if (not defined $params) {
+        $params = {};
+    } elsif (ref $params ne 'HASH') {
+        croak "parameters must be hashref.";
+    }
+
+    my @target;
+    if ($api =~ /^http/) {
+        if ($api =~ /.json$/) {
+            push @target, 'url', $api;
+        } else {
+            croak "url must end with '.json'. The argument is $api";
+        }
+    } else {
+        push @target, 'api', $api;
+    }
+
+    $self->request(@target, method => 'GET', params => $params, $cb);
+
+    return $self;
+}
+
+sub post {
+    my $self = shift;
+    my ($api, $params, $cb) = @_;
+
+    ref $params eq 'HASH' or croak "parameters must be hashref.";
+
+    my @target;
+    if ($api =~ /^http.+\.json$/) {
+        push @target, 'url', $api;
+    } else {
+        push @target, 'api', $api;
+    }
+
+    $self->request(@target, method => 'POST', params => $params, $cb);
+
+    return $self;
 }
 
 sub request {
@@ -121,27 +175,63 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
         access_token_secret => 'access_token_secret',
     );
 
-    # if you use eg/gen_token.pl, simply as:
-    #
-    # use JSON;
-    # use Perl6::Slurp;
-    # my $json_text = slurp 'config.json';
-    # my $config = decode_json($json_text);
-    # my $ua = AnyEvent::Twitter->new(%$config);
+    # or
+
+    my $ua = AnyEvent::Twitter->new(
+        consumer_key    => 'consumer_key',
+        consumer_secret => 'consumer_secret',
+        token           => 'access_token',
+        token_secret    => 'access_token_secret',
+    );
+
+    # or, if you use eg/gen_token.pl, you can write simply as:
+
+    use JSON;
+    use Perl6::Slurp;
+    my $json_text = slurp 'config.json';
+    my $config    = decode_json($json_text);
+    my $ua = AnyEvent::Twitter->new(%$config);
 
     my $cv = AE::cv;
 
+    # GET request
+    $cv->begin;
+    $ua->get('account/verify_credentials', sub {
+        my ($hdr, $res, $reason) = @_;
+
+        say $res->{screen_name};
+        $cv->end;
+    });
+
+    # GET request with parameters
+    $cv->begin;
+    $ua->get('account/verify_credentials', {include_entities => 1}, sub {
+        my ($hdr, $res, $reason) = @_;
+
+        say $res->{screen_name};
+        $cv->end;
+    });
+
+    # POST request with parameters
+    $cv->begin;
+    $ua->post('statuses/update', {status => 'いろはにほへと ちりぬるを'}, sub {
+        my ($hdr, $res, $reason) = @_;
+
+        say $res->{user}{screen_name};
+        $cv->end;
+    });
+
+    # verbose and old style
     $cv->begin;
     $ua->request(
-        api    => 'account/verify_credentials',
         method => 'GET',
+        api    => 'account/verify_credentials',
         sub {
             my ($hdr, $res, $reason) = @_;
 
             unless ($res) {
                 print $reason, "\n";
-            }
-            else {
+            } else {
                 print "ratelimit-remaining : ", $hdr->{'x-ratelimit-remaining'}, "\n",
                       "x-ratelimit-reset   : ", $hdr->{'x-ratelimit-reset'}, "\n",
                       "screen_name         : ", $res->{screen_name}, "\n";
@@ -152,11 +242,9 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
 
     $cv->begin;
     $ua->request(
-        api => 'statuses/update',
         method => 'POST',
-        params => {
-            status => '(#`ω´)クポー クポー',
-        },
+        api    => 'statuses/update',
+        params => { status => 'hello world!' },
         sub {
             print Dumper \@_;
             $cv->end;
@@ -165,27 +253,20 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
 
     $cv->begin;
     $ua->request(
-        url => 'http://api.twitter.com/1/statuses/update.json',
         method => 'POST',
-        params => {
-            status => '(#`ω´)クポー クポー',
-        },
+        url    => 'http://api.twitter.com/1/statuses/update.json',
+        params => { status => 'いろはにほへと ちりぬるを' },
         sub {
             print Dumper \@_;
             $cv->end;
         }
     );
+
     $cv->recv;
 
 =head1 DESCRIPTION
 
 AnyEvent::Twitter is a very thin wrapper for Twitter API using OAuth.
-
-NOTE :
-
-With the removal of basic authentication, the API of this module is different from older version.
-
-Be careful to upgrade if you are using older version.
 
 =head1 METHODS
 
@@ -200,9 +281,33 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 
 =item consumer_secret
 
-=item access_token
+=item access_token (or token)
 
-=item access_token_secret
+=item access_token_secret (or token_secret)
+
+=back
+
+=head2 get
+
+=over 4
+
+=item $ua->get($api, sub {})
+
+=item $ua->get($api, \%params, sub {})
+
+=item $ua->get($url, sub {})
+
+=item $ua->get($url, \%params, sub {})
+
+=back
+
+=head2 post
+
+=over 4
+
+=item $ua->post($api, \%params, sub {})
+
+=item $ua->post($url, \%params, sub {})
 
 =back
 
@@ -214,33 +319,34 @@ These parameters are required.
 
 =item api or url
 
-The api parameter is a shortcut option.
+The C<api> parameter is a shortcut option.
 
-If you want to specify the API url, the url parameter is good for you. The format should be 'json'.
+If you want to specify the API C<url>, the C<url> parameter is good for you. The format should be 'json'.
 
-The api parameter will be internally processed as:
+The C<api> parameter will be internally processed as:
 
     $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
 
-You can check the api option at L<Twitter API Wiki|http://apiwiki.twitter.com/Twitter-API-Documentation>
+You can check the C<api> option at L<Twitter API Wiki|http://apiwiki.twitter.com/Twitter-API-Documentation>
 
-=item method
+=item method and params
 
-Investigate the HTTP method of Twitter API that you want to use. Then specify it. GET/POST methods are allowed.
+Investigate the HTTP method and required parameters of Twitter API that you want to use.
+Then specify it. GET/POST methods are allowed. You can omit C<params> if Twitter API doesn't requires option.
 
 =item callback
 
-This module is AnyEvent::http_request style, so you have to pass the coderef callback.
+This module is AnyEvent::HTTP style, so you have to pass the coderef callback.
 
-$hdr, $response and $reason will be returned. If something is wrong with the response, $response will be undef. So you can check the value like below.
+Passed callback will be called with C<$hdr>, C<$response> and C<$reason>.
+If something is wrong with the response from Twitter API, C<$response> will be C<undef>. So you can check the value like below.
 
     sub {
         my ($hdr, $res, $reason) = @_;
 
         unless ($res) {
             print $reason, "\n";
-        }
-        else {
+        } else {
             print $res->{screen_name}, "\n";
         }
     }

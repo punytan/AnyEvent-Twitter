@@ -46,8 +46,32 @@ if ($out && $out =~ /y/i) {
     my $file = <STDIN>;
     chomp $file;
 
+    print "\n",
+          "Which style do you prefer?\n",
+          "\t1) Old style for AnyEvent::Twitter\n",
+          "\t2) New style for AnyEvent::Twitter, which is compatible with AnyEvent::Twitter::Stream (recommended)\n",
+          "[ 1 / 2 ] : ";
+
+    my $style = <STDIN>;
+    chomp $style;
+
     open my $fh, '>', $file or die $!;
-    print {$fh} encode_json(\%p);
+
+    if ($style eq '1') {
+        print {$fh} encode_json(\%p);
+    } elsif ($style eq '2') {
+        my %new = (
+            consumer_key    => $p{consumer_key},
+            consumer_secret => $p{consumer_secret},
+            token           => $p{access_token},
+            token_secret    => $p{access_token_secret},
+        );
+
+        print {$fh} encode_json(\%new);
+    } else {
+        die "Unknown option";
+    }
+
     close $fh or die $!;
 
     print "\n",
@@ -59,5 +83,4 @@ print "Done.\n\n";
 exit;
 
 __END__
-
 
