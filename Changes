@@ -1,5 +1,8 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.53    Mon Jun 20 21:30:32 2011
+        - fix documentation
+
 0.52    Mon Nov 22 06:28:11 JST 2010
         - new arguments for new().
         - added get() and post() method.

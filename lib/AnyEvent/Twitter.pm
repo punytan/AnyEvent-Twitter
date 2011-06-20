@@ -4,7 +4,7 @@ use warnings;
 use utf8;
 use 5.008;
 use Encode;
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 use Carp;
 use JSON;
