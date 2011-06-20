@@ -197,27 +197,31 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
     # GET request
     $cv->begin;
     $ua->get('account/verify_credentials', sub {
-        my ($hdr, $res, $reason) = @_;
+        my ($header, $response, $reason) = @_;
 
-        say $res->{screen_name};
+        say $response->{screen_name};
         $cv->end;
     });
 
     # GET request with parameters
     $cv->begin;
-    $ua->get('account/verify_credentials', {include_entities => 1}, sub {
-        my ($hdr, $res, $reason) = @_;
+    $ua->get('account/verify_credentials', {
+        include_entities => 1
+    }, sub {
+        my ($header, $response, $reason) = @_;
 
-        say $res->{screen_name};
+        say $response->{screen_name};
         $cv->end;
     });
 
     # POST request with parameters
     $cv->begin;
-    $ua->post('statuses/update', {status => 'いろはにほへと ちりぬるを'}, sub {
-        my ($hdr, $res, $reason) = @_;
+    $ua->post('statuses/update', {
+        status => 'いろはにほへと ちりぬるを'
+    }, sub {
+        my ($header, $response, $reason) = @_;
 
-        say $res->{user}{screen_name};
+        say $response->{user}{screen_name};
         $cv->end;
     });
 
@@ -327,7 +331,7 @@ The C<api> parameter will be internally processed as:
 
     $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
 
-You can check the C<api> option at L<Twitter API Wiki|http://apiwiki.twitter.com/Twitter-API-Documentation>
+You can check the C<api> option at L<API Documentation|http://dev.twitter.com/doc>
 
 =item method and params
 
@@ -336,18 +340,18 @@ Then specify it. GET/POST methods are allowed. You can omit C<params> if Twitter
 
 =item callback
 
-This module is AnyEvent::HTTP style, so you have to pass the coderef callback.
+This module is AnyEvent::HTTP style, so you have to pass the callback (coderef).
 
-Passed callback will be called with C<$hdr>, C<$response> and C<$reason>.
+Passed callback will be called with C<$header>, C<$response> and C<$reason>.
 If something is wrong with the response from Twitter API, C<$response> will be C<undef>. So you can check the value like below.
 
     sub {
-        my ($hdr, $res, $reason) = @_;
+        my ($header, $response, $reason) = @_;
 
-        unless ($res) {
+        unless ($response) {
             print $reason, "\n";
         } else {
-            print $res->{screen_name}, "\n";
+            print $response->{screen_name}, "\n";
         }
     }
 
