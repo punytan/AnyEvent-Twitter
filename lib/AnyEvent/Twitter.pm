@@ -40,55 +40,38 @@ sub new {
 }
 
 sub get {
-    my $self = shift;
-    my $api  = shift;
-    my $cb   = pop;
-    my $params = shift;
+    my $cb = pop;
+    my ($self, $endpoint, $params) = @_;
 
     if (not defined $params) {
         $params = {};
     } elsif (ref $params ne 'HASH') {
-        croak "parameters must be hashref.";
+        Carp::croak "parameters must be hashref.";
     }
 
-    my @target;
-    if ($api =~ /^http/) {
-        if ($api =~ /.json$/) {
-            push @target, 'url', $api;
-        } else {
-            croak "url must end with '.json'. The argument is $api";
-        }
-    } else {
-        push @target, 'api', $api;
-    }
+    my $type = $endpoint =~ /^http.+\.json$/ ? 'url' : 'api';
 
-    $self->request(@target, method => 'GET', params => $params, $cb);
+    $self->request($type => $endpoint, method => 'GET', params => $params, $cb);
 
     return $self;
 }
 
 sub post {
-    my $self = shift;
-    my ($api, $params, $cb) = @_;
+    my ($self, $endpoint, $params, $cb) = @_;
 
-    ref $params eq 'HASH' or croak "parameters must be hashref.";
+    ref $params eq 'HASH'
+        or Carp::croak "parameters must be hashref.";
 
-    my @target;
-    if ($api =~ /^http.+\.json$/) {
-        push @target, 'url', $api;
-    } else {
-        push @target, 'api', $api;
-    }
+    my $type = $endpoint =~ /^http.+\.json$/ ? 'url' : 'api';
 
-    $self->request(@target, method => 'POST', params => $params, $cb);
+    $self->request($type => $endpoint, method => 'POST', params => $params, $cb);
 
     return $self;
 }
 
 sub request {
-    my $self = shift;
-    my $cb   = pop;
-    my %opt  = @_;
+    my $cb = pop;
+    my ($self, %opt) = @_;
 
     my $url;
     if (defined $opt{url}) {
@@ -96,14 +79,18 @@ sub request {
     } elsif (defined $opt{api}) {
         $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
     } else {
-        croak "'api' or 'url' option is required";
+        Carp::croak "'api' or 'url' option is required";
     }
 
-    ref $cb eq 'CODE'    or croak "callback coderef is required";
-    defined $opt{method} or croak "'method' option is required";
+    ref $cb eq 'CODE'
+        or Carp::croak "callback coderef is required";
+
+    defined $opt{method}
+        or Carp::croak "'method' option is required";
 
     $opt{method} = uc $opt{method};
-    $opt{method} =~ /^(?:GET|POST)$/ or croak "'method' option should be GET or POST";
+    $opt{method} =~ /^(?:GET|POST)$/
+        or Carp::croak "'method' option should be GET or POST";
 
     my $req = $self->_make_oauth_request(
         request_url    => $url,
@@ -111,16 +98,15 @@ sub request {
         extra_params   => $opt{params},
     );
 
-    my $req_url;
     my %req_params;
     if ($opt{method} eq 'POST') {
+        $url = $req->normalized_request_url;
         $req_params{body} = $req->to_post_body;
-        $req_url = $req->normalized_request_url;
     } else {
-        $req_url = $req->to_url;
+        $url = $req->to_url;
     }
 
-    http_request($opt{method} => $req_url, %req_params, sub {
+    AnyEvent::HTTP::http_request($opt{method} => $url, %req_params, sub {
         my ($body, $hdr) = @_;
 
         if ($hdr->{Status} =~ /^2/) {
