@@ -18,20 +18,25 @@ sub new {
     my $class = shift;
     my %args  = @_;
 
-    if (defined $args{token}) {
-        $args{access_token} = $args{token};
-    }
+    $args{access_token} ||= $args{token}
+        or Carp::croak "access_token is required";
 
-    if (defined $args{token_secret}) {
-        $args{access_token_secret} = $args{token_secret};
-    }
+    $args{access_token_secret} ||= $args{token_secret}
+        or Carp::croak "access_token_secret is required";
 
-    defined $args{consumer_key}        or croak "consumer_key is needed";
-    defined $args{consumer_secret}     or croak "consumer_secret is needed";
-    defined $args{access_token}        or croak "access_token is needed";
-    defined $args{access_token_secret} or croak "access_token_secret is needed";
+    defined $args{consumer_key}
+        or Carp::croak "consumer_key is required";
 
-    return bless \%args, $class;
+    defined $args{consumer_secret}
+        or Carp::croak "consumer_secret is required";
+
+    return bless {
+        %args,
+        site               => 'http://twitter.com/',
+        authorize_path     => 'http://twitter.com/oauth/authorize',
+        request_token_path => 'http://twitter.com/oauth/request_token',
+        access_token_path  => 'http://twitter.com/oauth/access_token',
+    }, $class;
 }
 
 sub get {
