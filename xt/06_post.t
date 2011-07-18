@@ -28,7 +28,9 @@ my $ua = AnyEvent::Twitter->new(
 my $cv = AE::cv;
 
 $cv->begin;
-$ua->post('statuses/update', { status => 'いろはにほへと ' . time }, sub {
+$ua->post('statuses/update', {
+    status => 'いろはにほへと ' . time
+}, sub {
     my ($hdr, $res, $reason) = @_;
 
     is($res->{user}{screen_name}, $screen_name, "account/verify_credentials");
@@ -36,7 +38,9 @@ $ua->post('statuses/update', { status => 'いろはにほへと ' . time }, sub 
 });
 
 $cv->begin;
-$ua->post('http://api.twitter.com/1/statuses/update.json', { status => 'いろはにほへと ' . time },
+$ua->post('http://api.twitter.com/1/statuses/update.json', {
+    status => 'いろはにほへと ' . rand
+},
     sub {
         my ($hdr, $res, $reason) = @_;
 
