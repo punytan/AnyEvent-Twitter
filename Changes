@@ -1,5 +1,10 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.60    Wed Jul 20 04:30:23 JST 2011
+        - refactoring
+        - add get_request_token() *undocumented
+        - add get_access_token() *undocumented
+
 0.53    Mon Jun 20 21:30:32 2011
         - fix documentation
 
