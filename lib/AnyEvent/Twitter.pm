@@ -9,14 +9,14 @@ our $VERSION = '0.53';
 use Carp;
 use JSON;
 use Net::OAuth;
+use Net::OAuth::ProtectedResourceRequest;
 use Digest::SHA;
 use AnyEvent::HTTP;
 
 $Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
 
 sub new {
-    my $class = shift;
-    my %args  = @_;
+    my ($class, %args) = @_;
 
     $args{access_token} ||= $args{token}
         or Carp::croak "access_token is required";
@@ -85,9 +85,6 @@ sub request {
     ref $cb eq 'CODE'
         or Carp::croak "callback coderef is required";
 
-    defined $opt{method}
-        or Carp::croak "'method' option is required";
-
     $opt{method} = uc $opt{method};
     $opt{method} =~ /^(?:GET|POST)$/
         or Carp::croak "'method' option should be GET or POST";
@@ -106,17 +103,17 @@ sub request {
         $url = $req->to_url;
     }
 
-    AnyEvent::HTTP::http_request($opt{method} => $url, %req_params, sub {
+    AnyEvent::HTTP::http_request $opt{method} => $url, %req_params, sub {
         my ($body, $hdr) = @_;
 
         if ($hdr->{Status} =~ /^2/) {
             local $@;
-            my $json = eval { decode_json($body) };
+            my $json = eval { JSON::decode_json($body) };
             $cb->($hdr, $json, $@ ? "parse error: $@" : $hdr->{Reason}) ;
         } else {
             $cb->($hdr, undef, $hdr->{Reason});
         }
-    });
+    };
 
     return $self;
 }
@@ -127,7 +124,7 @@ sub _make_oauth_request {
 
     local $Net::OAuth::SKIP_UTF8_DOUBLE_ENCODE_CHECK = 1;
 
-    my $req = Net::OAuth->request('protected resource')->new(
+    my $req = Net::OAuth::ProtectedResourceRequest->new(
         version          => '1.0',
         consumer_key     => $self->{consumer_key},
         consumer_secret  => $self->{consumer_secret},
