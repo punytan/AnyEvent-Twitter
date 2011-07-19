@@ -10,7 +10,7 @@ use AnyEvent::Twitter;
 my $config;
 
 if (-f './xt/config.json') {
-    open my $fh, '<', './xt/config.json' or die $!;
+    open my $fh, '<', './xt/config-token-test.json' or die $!;
     $config = decode_json(join '', <$fh>);
     close $fh or die $!;
 } else {
@@ -33,8 +33,8 @@ my %token;
         callback_url    => 'http://localhost:5000/',
         cb => sub {
             my ($location, $token, $body, $header) = @_;
-            note Dumper \@_;
 
+            note Dumper \@_;
             like $location, qr/^http/, 'authorize location';
 
             %token = %$token;

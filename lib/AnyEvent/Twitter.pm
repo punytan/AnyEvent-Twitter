@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use utf8;
 use 5.008;
-use Encode;
 our $VERSION = '0.53';
 
 use Carp;
@@ -45,14 +44,7 @@ sub get {
     my $cb = pop;
     my ($self, $endpoint, $params) = @_;
 
-    if (not defined $params) {
-        $params = {};
-    } elsif (ref $params ne 'HASH') {
-        Carp::croak "parameters must be hashref.";
-    }
-
     my $type = $endpoint =~ /^http.+\.json$/ ? 'url' : 'api';
-
     $self->request($type => $endpoint, method => 'GET', params => $params, $cb);
 
     return $self;
@@ -61,11 +53,7 @@ sub get {
 sub post {
     my ($self, $endpoint, $params, $cb) = @_;
 
-    ref $params eq 'HASH'
-        or Carp::croak "parameters must be hashref.";
-
     my $type = $endpoint =~ /^http.+\.json$/ ? 'url' : 'api';
-
     $self->request($type => $endpoint, method => 'POST', params => $params, $cb);
 
     return $self;
@@ -75,26 +63,31 @@ sub request {
     my $cb = pop;
     my ($self, %opt) = @_;
 
-    my $url;
-    if (defined $opt{url}) {
-        $url = $opt{url};
-    } elsif (defined $opt{api}) {
-        $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
-    } else {
-        Carp::croak "'api' or 'url' option is required";
-    }
+    ($opt{api} || $opt{url})
+        or Carp::croak "'api' or 'url' option is required";
+
+    my $url = $opt{url} || 'http://api.twitter.com/1/' . $opt{api} . '.json';
 
     ref $cb eq 'CODE'
         or Carp::croak "callback coderef is required";
+
+    $opt{params} ||= {};
+    ref $opt{params} eq 'HASH'
+        or Carp::croak "parameters must be hashref.";
 
     $opt{method} = uc $opt{method};
     $opt{method} =~ /^(?:GET|POST)$/
         or Carp::croak "'method' option should be GET or POST";
 
     my $req = $self->_make_oauth_request(
-        request_url    => $url,
-        request_method => $opt{method},
-        extra_params   => $opt{params},
+        class => 'Net::OAuth::ProtectedResourceRequest',
+        request_url     => $url,
+        request_method  => $opt{method},
+        extra_params    => $opt{params},
+        consumer_key    => $self->{consumer_key},
+        consumer_secret => $self->{consumer_secret},
+        token           => $self->{access_token},
+        token_secret    => $self->{access_token_secret},
     );
 
     my %req_params;
@@ -111,7 +104,7 @@ sub request {
         if ($hdr->{Status} =~ /^2/) {
             local $@;
             my $json = eval { JSON::decode_json($body) };
-            $cb->($hdr, $json, $@ ? "parse error: $@" : $hdr->{Reason}) ;
+            $cb->($hdr, $json, $@ ? "parse error: $@" : $hdr->{Reason});
         } else {
             $cb->($hdr, undef, $hdr->{Reason});
         }
@@ -121,20 +114,16 @@ sub request {
 }
 
 sub _make_oauth_request {
-    my $self = shift;
-    my %opt  = @_;
+    my $self  = shift;
+    my %opt   = @_;
+    my $class = delete $opt{class};
 
     local $Net::OAuth::SKIP_UTF8_DOUBLE_ENCODE_CHECK = 1;
-
-    my $req = Net::OAuth::ProtectedResourceRequest->new(
-        version          => '1.0',
-        consumer_key     => $self->{consumer_key},
-        consumer_secret  => $self->{consumer_secret},
-        token            => $self->{access_token},
-        token_secret     => $self->{access_token_secret},
+    my $req = $class->new(
+        version   => '1.0',
+        timestamp => time,
+        nonce     => Digest::SHA::sha1_base64(time . $$ . rand),
         signature_method => 'HMAC-SHA1',
-        timestamp        => time,
-        nonce            => Digest::SHA::sha1_base64(time . $$ . rand),
         %opt,
     );
     $req->sign;
@@ -145,10 +134,7 @@ sub _make_oauth_request {
 sub get_request_token {
     my ($class, %args) = @_;
 
-    my @required = qw(
-        consumer_key consumer_secret callback_url
-    );
-
+    my @required = qw(consumer_key consumer_secret callback_url);
     for my $item (@required) {
         defined $args{$item} or Carp::croak "$item is required";
     }
@@ -156,22 +142,18 @@ sub get_request_token {
     ref $args{cb} eq 'CODE'
         or Carp::croak "cb must be callback coderef";
 
-    my $req = Net::OAuth::RequestTokenRequest->new(
-        version          => '1.0',
-        consumer_key     => $args{consumer_key},
-        consumer_secret  => $args{consumer_secret},
-        signature_method => 'HMAC-SHA1',
-        timestamp        => time,
-        nonce            => Digest::SHA::sha1_base64(time . $$ . rand),
-        request_url      => $PATH{request_token},
-        request_method   => 'GET',
-        callback         => $args{callback_url},
+    my $req = __PACKAGE__->_make_oauth_request(
+        class => 'Net::OAuth::RequestTokenRequest',
+        request_method  => 'GET',
+        request_url     => $PATH{request_token},
+        consumer_key    => $args{consumer_key},
+        consumer_secret => $args{consumer_secret},
+        callback        => $args{callback_url},
     );
     $req->sign;
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
-
         my %token = __PACKAGE__->_parse_response($body);
         my $location = URI->new($PATH{authorize});
         $location->query_form(%token);
@@ -195,24 +177,20 @@ sub get_access_token {
     ref $args{cb} eq 'CODE'
         or Carp::croak "cb must be callback coderef";
 
-    my $req = Net::OAuth::AccessTokenRequest->new(
-        version          => '1.0',
-        consumer_key     => $args{consumer_key},
-        consumer_secret  => $args{consumer_secret},
-        signature_method => 'HMAC-SHA1',
-        timestamp        => time,
-        nonce            => Digest::SHA::sha1_base64(time . $$ . rand),
-        request_url      => $PATH{access_token},
-        request_method   => 'GET',
-        token            => $args{oauth_token},
-        token_secret     => $args{oauth_token_secret},
-        verifier         => $args{oauth_verifier},
+    my $req = __PACKAGE__->_make_oauth_request(
+        class => 'Net::OAuth::AccessTokenRequest',
+        request_method  => 'GET',
+        request_url     => $PATH{access_token},
+        consumer_key    => $args{consumer_key},
+        consumer_secret => $args{consumer_secret},
+        token           => $args{oauth_token},
+        token_secret    => $args{oauth_token_secret},
+        verifier        => $args{oauth_verifier},
     );
     $req->sign;
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
-
         my %response = __PACKAGE__->_parse_response($body);
         $args{cb}->(\%response, $body, $header);
     };

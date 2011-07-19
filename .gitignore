@@ -10,3 +10,4 @@ nytprof.out
 MANIFEST.bak
 *.sw[po]
 xt/config.json
+xt/config-token-test.json
