@@ -416,7 +416,7 @@ If something is wrong with the response from Twitter API, C<$response> will be C
 
 =head1 EXPERIMENTAL METHODS
 
-Methods listed below are experimental feature. So iterfaces or returned values may vary in the future.
+Methods listed below are experimental feature. So interfaces or returned values may vary in the future.
 
 =head2 C<< AnyEvent::Twitter->get_request_token >>
 
