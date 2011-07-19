@@ -178,12 +178,7 @@ sub get_request_token {
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
 
-        my %token;
-        for my $pair (split /&/, $body) {
-            my ($key, $value) = split /=/, $pair;
-            $token{$key} = URI::Escape::uri_unescape($value);
-        }
-
+        my %token = __PACKAGE__->_parse_response($body);
         my $location = URI->new($PATH{authorize});
         $location->query_form(%token);
 
@@ -222,8 +217,23 @@ sub get_access_token {
     $req->sign;
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
-        $args{cb}->(@_);
+        my ($body, $header) = @_;
+
+        my %response = __PACKAGE__->_parse_response($body);
+        $args{cb}->(\%response, $body, $header);
     };
+}
+
+sub _parse_response {
+    my ($class, $body) = @_;
+
+    my %query;
+    for my $pair (split /&/, $body) {
+        my ($key, $value) = split /=/, $pair;
+        $query{$key} = URI::Escape::uri_unescape($value);
+    }
+
+    return %query;
 }
 
 1;

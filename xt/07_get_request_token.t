@@ -59,8 +59,33 @@ my %token;
         oauth_token_secret => $token{oauth_token_secret},
         oauth_verifier     => $oauth_verifier,
         cb => sub {
+            my ($token, $body, $header) = @_;
+
             note Dumper \@_;
-            $cv->end;
+            note Dumper $token;
+
+            ok defined $token->{oauth_token};
+            ok defined $token->{oauth_token_secret};
+            like $token->{user_id}, qr/^\d+$/, 'user_id';
+            is $token->{screen_name}, $config->{screen_name};
+
+            my $twitty = AnyEvent::Twitter->new(
+                consumer_key    => $config->{consumer_key},
+                consumer_secret => $config->{consumer_secret},
+                token           => $token->{oauth_token},
+                token_secret    => $token->{oauth_token_secret},
+            );
+
+            $twitty->get('account/verify_credentials', sub {
+                my ($header, $res) = @_;
+
+                note Dumper $res;
+
+                is $res->{id}, $token->{user_id};
+                is $res->{screen_name}, $token->{screen_name};
+
+                $cv->end;
+            });
         },
     );
     $cv->recv;
