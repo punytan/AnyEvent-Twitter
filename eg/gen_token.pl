@@ -4,33 +4,72 @@ use strict;
 use warnings;
 use utf8;
 use JSON;
-use Net::Twitter::Lite;
+use AnyEvent;
+use AnyEvent::Twitter;
 
 my %p;
 
-print "\n", "Register your app at http://twitter.com/oauth_clients\n\n";
-
+print "Register your app at https://dev.twitter.com/apps\n\n";
 print "Paste your\n";
-print "\tconsumer_key    : ";
-$p{consumer_key} = <STDIN>;
-chomp $p{consumer_key};
 
-print "\tconsumer_secret : ";
-$p{consumer_secret} = <STDIN>;
-chomp $p{consumer_secret};
+$p{consumer_key} = do {
+    print "\tconsumer_key    : ";
+    my $key = <STDIN>;
+    chomp $key;
+    $key;
+};
 
-my $nt = Net::Twitter::Lite->new(%p);
+$p{consumer_secret} = do {
+    print "\tconsumer_secret : ";
+    my $secret = <STDIN>;
+    chomp $secret;
+    $secret;
+};
 
-print "\n",
-    "Access the authorization URL and get the PIN at \n\n",
-    $nt->get_authorization_url,
-    "\n\n";
+our %TOKEN;
+my $cv = AE::cv;
+$cv->begin;
+AnyEvent::Twitter->get_request_token(
+    consumer_key    => $p{consumer_key},
+    consumer_secret => $p{consumer_secret},
+    callback_url    => 'oob',
+    cb => sub {
+        my ($location, $response, $body, $header) = @_;
+        %TOKEN = %$response;
 
-print "\tInput the PIN   : ";
-my $pin = <STDIN>;
-chomp $pin;
+        print "\n",
+              "Access the authorization URL and get the PIN at \n\n",
+              "$location\n\n";
 
-($p{access_token}, $p{access_token_secret}) = $nt->request_access_token(verifier => $pin);
+        $cv->end;
+    },
+);
+$cv->recv;
+
+my $pin = do {
+    print "\tInput the PIN   : ";
+    my $p = <STDIN>;
+    chomp $p;
+    $p;
+};
+
+$cv = AE::cv;
+$cv->begin;
+AnyEvent::Twitter->get_access_token(
+    consumer_key       => $p{consumer_key},
+    consumer_secret    => $p{consumer_secret},
+    oauth_token        => $TOKEN{oauth_token},
+    oauth_token_secret => $TOKEN{oauth_token_secret},
+    oauth_verifier     => $pin,
+    cb => sub {
+        my ($token, $body, $header) = @_;
+        $p{access_token}         = $token->{oauth_token};
+        $p{access_token_secret}  = $token->{oauth_token_secret};
+        $cv->end;
+    },
+);
+$cv->recv;
+
 print "\n",
       "access_token        is $p{access_token}\n",
       "access_token_secret is $p{access_token_secret}\n\n",
@@ -43,6 +82,7 @@ if ($out && $out =~ /y/i) {
     print "\n",
           "You can save it as JSON.\n",
           "Input the file name to save : ";
+
     my $file = <STDIN>;
     chomp $file;
 
