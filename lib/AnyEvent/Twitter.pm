@@ -8,12 +8,23 @@ our $VERSION = '0.53';
 
 use Carp;
 use JSON;
-use Net::OAuth;
-use Net::OAuth::ProtectedResourceRequest;
+use URI;
+use URI::Escape;
 use Digest::SHA;
 use AnyEvent::HTTP;
 
+use Net::OAuth;
+use Net::OAuth::ProtectedResourceRequest;
+use Net::OAuth::RequestTokenRequest;
+
 $Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
+
+our %PATH = (
+    site          => 'https://twitter.com/',
+    request_token => 'https://api.twitter.com/oauth/request_token',
+    authorize     => 'https://api.twitter.com/oauth/authorize',
+    access_token  => 'https://api.twitter.com/oauth/access_token',
+);
 
 sub new {
     my ($class, %args) = @_;
@@ -32,10 +43,6 @@ sub new {
 
     return bless {
         %args,
-        site               => 'http://twitter.com/',
-        authorize_path     => 'http://twitter.com/oauth/authorize',
-        request_token_path => 'http://twitter.com/oauth/request_token',
-        access_token_path  => 'http://twitter.com/oauth/access_token',
     }, $class;
 }
 
@@ -138,6 +145,50 @@ sub _make_oauth_request {
     $req->sign;
 
     return $req;
+}
+
+sub get_request_token {
+    my ($class, %args) = @_;
+
+    defined $args{consumer_key}
+        or Carp::croak "consumer_key is required";
+
+    defined $args{consumer_secret}
+        or Carp::croak "consumer_secret is required";
+
+    defined $args{callback_url}
+        or Carp::croak "callback_url is required";
+
+    ref $args{cb} eq 'CODE'
+        or Carp::croak "cb is required";
+
+    my $req = Net::OAuth::RequestTokenRequest->new(
+        version          => '1.0',
+        consumer_key     => $args{consumer_key},
+        consumer_secret  => $args{consumer_secret},
+        signature_method => 'HMAC-SHA1',
+        timestamp        => time,
+        nonce            => Digest::SHA::sha1_base64(time . $$ . rand),
+        request_url      => $PATH{request_token},
+        request_method   => 'GET',
+        callback         => $args{callback_url},
+    );
+    $req->sign;
+
+    AnyEvent::HTTP::http_request GET => $req->to_url, sub {
+        my ($body, $header) = @_;
+        my %token;
+
+        for my $pair (split /&/, $body) {
+            my ($key, $value) = split /=/, $pair;
+            $token{$key} = URI::Escape::uri_unescape($value);
+        }
+
+        my $location = URI->new($PATH{authorize});
+        $location->query_form(%token);
+
+        $args{cb}->($location->as_string, $body, $header);
+    };
 }
 
 1;
