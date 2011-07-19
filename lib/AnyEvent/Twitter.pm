@@ -16,6 +16,7 @@ use AnyEvent::HTTP;
 use Net::OAuth;
 use Net::OAuth::ProtectedResourceRequest;
 use Net::OAuth::RequestTokenRequest;
+use Net::OAuth::AccessTokenRequest;
 
 $Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
 
@@ -160,7 +161,7 @@ sub get_request_token {
         or Carp::croak "callback_url is required";
 
     ref $args{cb} eq 'CODE'
-        or Carp::croak "cb is required";
+        or Carp::croak "cb must be callback coderef";
 
     my $req = Net::OAuth::RequestTokenRequest->new(
         version          => '1.0',
@@ -177,8 +178,8 @@ sub get_request_token {
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
-        my %token;
 
+        my %token;
         for my $pair (split /&/, $body) {
             my ($key, $value) = split /=/, $pair;
             $token{$key} = URI::Escape::uri_unescape($value);
@@ -188,6 +189,41 @@ sub get_request_token {
         $location->query_form(%token);
 
         $args{cb}->($location->as_string, $body, $header);
+    };
+}
+
+sub get_access_token {
+    my ($class, %args) = @_;
+
+    my @required = qw(
+        consumer_key consumer_secret
+        oauth_token  oauth_token_secret oauth_verifier
+    );
+
+    for my $item (@required) {
+        defined $args{$item} or Carp::croak "$item is required";
+    }
+
+    ref $args{cb} eq 'CODE'
+        or Carp::croak "cb must be callback coderef";
+
+    my $req = Net::OAuth::AccessTokenRequest->new(
+        version          => '1.0',
+        consumer_key     => $args{consumer_key},
+        consumer_secret  => $args{consumer_secret},
+        signature_method => 'HMAC-SHA1',
+        timestamp        => time,
+        nonce            => Digest::SHA::sha1_base64(time . $$ . rand),
+        request_url      => $PATH{access_token},
+        request_method   => 'GET',
+        token            => $args{oauth_token},
+        token_secret     => $args{oauth_token_secret},
+        verifier         => $args{oauth_verifier},
+    );
+    $req->sign;
+
+    AnyEvent::HTTP::http_request GET => $req->to_url, sub {
+        $args{cb}->(@_);
     };
 }
 
