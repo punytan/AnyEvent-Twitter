@@ -228,27 +228,25 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
     use AnyEvent::Twitter;
 
     my $ua = AnyEvent::Twitter->new(
-        consumer_key        => 'consumer_key',
-        consumer_secret     => 'consumer_secret',
-        access_token        => 'access_token',
-        access_token_secret => 'access_token_secret',
-    );
-
-    # or
-
-    my $ua = AnyEvent::Twitter->new(
         consumer_key    => 'consumer_key',
         consumer_secret => 'consumer_secret',
         token           => 'access_token',
         token_secret    => 'access_token_secret',
     );
 
+    # or
+
+    my $ua = AnyEvent::Twitter->new(
+        consumer_key        => 'consumer_key',
+        consumer_secret     => 'consumer_secret',
+        access_token        => 'access_token',
+        access_token_secret => 'access_token_secret',
+    );
+
     # or, if you use eg/gen_token.pl, you can write simply as:
 
-    use JSON;
-    use Perl6::Slurp;
     my $json_text = slurp 'config.json';
-    my $config    = decode_json($json_text);
+    my $config    = JSON::decode_json($json_text);
     my $ua = AnyEvent::Twitter->new(%$config);
 
     my $cv = AE::cv;
@@ -340,13 +338,13 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 
 =over 4
 
-=item consumer_key
+=item C<consumer_key>
 
-=item consumer_secret
+=item C<consumer_secret>
 
-=item access_token (or token)
+=item C<access_token> (or C<token>)
 
-=item access_token_secret (or token_secret)
+=item C<access_token_secret> (or C<token_secret>)
 
 =back
 
@@ -354,13 +352,13 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 
 =over 4
 
-=item $ua->get($api, sub {})
+=item C<< $ua->get($api, sub {}) >>
 
-=item $ua->get($api, \%params, sub {})
+=item C<< $ua->get($api, \%params, sub {}) >>
 
-=item $ua->get($url, sub {})
+=item C<< $ua->get($url, sub {}) >>
 
-=item $ua->get($url, \%params, sub {})
+=item C<< $ua->get($url, \%params, sub {}) >>
 
 =back
 
@@ -368,9 +366,9 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 
 =over 4
 
-=item $ua->post($api, \%params, sub {})
+=item C<< $ua->post($api, \%params, sub {}) >>
 
-=item $ua->post($url, \%params, sub {})
+=item C<< $ua->post($url, \%params, sub {}) >>
 
 =back
 
@@ -380,7 +378,7 @@ These parameters are required.
 
 =over 4
 
-=item api or url
+=item C<api> or C<url>
 
 The C<api> parameter is a shortcut option.
 
@@ -390,12 +388,12 @@ The C<api> parameter will be internally processed as:
 
     $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
 
-You can check the C<api> option at L<API Documentation|http://dev.twitter.com/doc>
+You can check available C<api>s at L<API Documentation|https://dev.twitter.com/docs/api>
 
-=item method and params
+=item C<method> and C<params>
 
 Investigate the HTTP method and required parameters of Twitter API that you want to use.
-Then specify it. GET/POST methods are allowed. You can omit C<params> if Twitter API doesn't requires option.
+Then specify it. GET and POST methods are allowed. You can omit C<params> if Twitter API doesn't require it.
 
 =item callback
 
@@ -415,6 +413,42 @@ If something is wrong with the response from Twitter API, C<$response> will be C
     }
 
 =back
+
+=head1 EXPERIMENTAL METHODS
+
+Methods listed below are experimental feature. So iterfaces or returned values may vary in the future.
+
+=head2 C<< AnyEvent::Twitter->get_request_token >>
+
+    AnyEvent::Twitter->get_request_token(
+        consumer_key    => $consumer_key,
+        consumer_secret => $consumer_secret,
+        callback_url    => 'http://example.com/callback',
+        # auth => 'authenticate',
+        cb => sub {
+            my ($location, $response, $body, $header) = @_;
+            # $location is the endpoint where users are asked the permission
+            # $response is a hashref of parsed body
+            # $body is raw response itself
+            # $header is response headers
+        },
+    );
+
+=head2 C<< AnyEvent::Twitter->get_access_token >>
+
+    AnyEvent::Twitter->get_access_token(
+        consumer_key       => $consumer_key,
+        consumer_secret    => $consumer_secret,
+        oauth_token        => $oauth_token,
+        oauth_token_secret => $oauth_token_secret,
+        oauth_verifier     => $oauth_verifier,
+        cb => sub {
+            my ($token, $body, $header) = @_;
+            # $token is the parsed body
+            # $body is raw response
+            # $header is response headers
+        },
+    );
 
 =head1 CONTRIBUTORS
 
