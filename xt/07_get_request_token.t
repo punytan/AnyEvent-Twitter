@@ -19,7 +19,8 @@ if (-f './xt/config.json') {
 
 my $screen_name = $config->{screen_name};
 
-my $oauth_token_secret;
+my %token;
+
 {
     my $cv = AE::cv;
     $cv->begin;
@@ -28,12 +29,12 @@ my $oauth_token_secret;
         consumer_secret => $config->{consumer_secret},
         callback_url    => 'http://localhost:5000/',
         cb => sub {
-            my $location = shift;
+            my ($location, $token, $body, $header) = @_;
             note Dumper \@_;
-            note $location;
+
             like $location, qr/^http/, 'authorize location';
 
-            $oauth_token_secret = $location =~ /oauth_token_secret=([^&]+)/;
+            %token = %$token;
             $cv->end;
         },
     );
@@ -52,11 +53,11 @@ my $oauth_token_secret;
     my $cv = AE::cv;
     $cv->begin;
     AnyEvent::Twitter->get_access_token(
-        consumer_key    => $config->{consumer_key},
-        consumer_secret => $config->{consumer_secret},
-        oauth_token     => $oauth_token,
-        oauth_token_secret => $oauth_token_secret,
-        oauth_verifier  => $oauth_verifier,
+        consumer_key       => $config->{consumer_key},
+        consumer_secret    => $config->{consumer_secret},
+        oauth_token        => $oauth_token,
+        oauth_token_secret => $token{oauth_token_secret},
+        oauth_verifier     => $oauth_verifier,
         cb => sub {
             note Dumper \@_;
             $cv->end;

@@ -151,14 +151,13 @@ sub _make_oauth_request {
 sub get_request_token {
     my ($class, %args) = @_;
 
-    defined $args{consumer_key}
-        or Carp::croak "consumer_key is required";
+    my @required = qw(
+        consumer_key consumer_secret callback_url
+    );
 
-    defined $args{consumer_secret}
-        or Carp::croak "consumer_secret is required";
-
-    defined $args{callback_url}
-        or Carp::croak "callback_url is required";
+    for my $item (@required) {
+        defined $args{$item} or Carp::croak "$item is required";
+    }
 
     ref $args{cb} eq 'CODE'
         or Carp::croak "cb must be callback coderef";
@@ -188,7 +187,7 @@ sub get_request_token {
         my $location = URI->new($PATH{authorize});
         $location->query_form(%token);
 
-        $args{cb}->($location->as_string, $body, $header);
+        $args{cb}->($location->as_string, \%token, $body, $header);
     };
 }
 
