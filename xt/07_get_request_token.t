@@ -17,6 +17,9 @@ if (-f './xt/config.json') {
     plan skip_all => 'There is no setting file for testing';
 }
 
+plan skip_all => 'This test should not be executed by prove'
+    if $ENV{HARNESS_ACTIVE};
+
 my $screen_name = $config->{screen_name};
 
 my %token;
