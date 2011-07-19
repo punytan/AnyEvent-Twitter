@@ -30,21 +30,15 @@ our %PATH = (
 sub new {
     my ($class, %args) = @_;
 
-    $args{access_token} ||= $args{token}
-        or Carp::croak "access_token is required";
+    $args{access_token}        ||= $args{token};
+    $args{access_token_secret} ||= $args{token_secret};
 
-    $args{access_token_secret} ||= $args{token_secret}
-        or Carp::croak "access_token_secret is required";
+    my @required = qw(access_token access_token_secret consumer_key consumer_secret);
+    for my $item (@required) {
+         defined $args{$item} or Carp::croak "$item is required";
+    }
 
-    defined $args{consumer_key}
-        or Carp::croak "consumer_key is required";
-
-    defined $args{consumer_secret}
-        or Carp::croak "consumer_secret is required";
-
-    return bless {
-        %args,
-    }, $class;
+    return bless { %args }, $class;
 }
 
 sub get {
