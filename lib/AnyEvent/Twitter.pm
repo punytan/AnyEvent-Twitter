@@ -24,6 +24,7 @@ our %PATH = (
     request_token => 'https://api.twitter.com/oauth/request_token',
     authorize     => 'https://api.twitter.com/oauth/authorize',
     access_token  => 'https://api.twitter.com/oauth/access_token',
+    authenticate  => 'https://api.twitter.com/oauth/authenticate',
 );
 
 sub new {
@@ -142,6 +143,8 @@ sub get_request_token {
     ref $args{cb} eq 'CODE'
         or Carp::croak "cb must be callback coderef";
 
+    $args{auth} ||= 'authorize';
+
     my $req = __PACKAGE__->_make_oauth_request(
         class => 'Net::OAuth::RequestTokenRequest',
         request_method  => 'GET',
@@ -155,7 +158,7 @@ sub get_request_token {
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
         my %token = __PACKAGE__->_parse_response($body);
-        my $location = URI->new($PATH{authorize});
+        my $location = URI->new($PATH{ $args{auth} });
         $location->query_form(%token);
 
         $args{cb}->($location->as_string, \%token, $body, $header);
