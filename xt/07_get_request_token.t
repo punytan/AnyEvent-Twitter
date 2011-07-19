@@ -52,7 +52,7 @@ my $screen_name = $config->{screen_name};
     my $oauth_verifier = <STDIN>;
     chomp $oauth_verifier;
 
-    my $cv = AE::cv;
+    $cv = AE::cv;
     $cv->begin;
     AnyEvent::Twitter->get_access_token(
         consumer_key       => $config->{consumer_key},
@@ -123,7 +123,7 @@ my $screen_name = $config->{screen_name};
     my $oauth_verifier = <STDIN>;
     chomp $oauth_verifier;
 
-    my $cv = AE::cv;
+    $cv = AE::cv;
     $cv->begin;
     AnyEvent::Twitter->get_access_token(
         consumer_key       => $config->{consumer_key},
