@@ -23,17 +23,21 @@ my $ua = AnyEvent::Twitter->new(%$config);
 my $cv = AE::cv;
 
 $cv->begin;
-$ua->request(method => 'GET', api => 'account/verify_credentials', sub {
-    my ($hdr, $res, $reason) = @_;
+$ua->request(
+    method => 'GET',
+    api    => 'account/verify_credentials',
+    sub {
+        my ($hdr, $res, $reason) = @_;
 
-    is($res->{screen_name}, $screen_name, "account/verify_credentials");
-    $cv->end;
-});
+        is($res->{screen_name}, $screen_name, "account/verify_credentials");
+        $cv->end;
+    }
+);
 
 $cv->begin;
 $ua->request(
-    api => 'statuses/update',
     method => 'POST',
+    api    => 'statuses/update',
     params => {
         status => '(#`ω´)クポー クポー via api ' . scalar(localtime),
     },
@@ -49,7 +53,7 @@ $ua->request(
 $cv->begin;
 $ua->request(
     method => 'POST',
-    url => 'http://api.twitter.com/1/statuses/update.json',
+    url    => 'http://api.twitter.com/1/statuses/update.json',
     params => {
         status => '(#`ω´)クポー クポー via url ' . time,
     },
@@ -59,7 +63,8 @@ $ua->request(
         is($res->{user}{screen_name}, $screen_name, "update.json");
 
         $cv->end;
-});
+    }
+);
 
 $cv->recv;
 

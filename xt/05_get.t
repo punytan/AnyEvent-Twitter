@@ -53,7 +53,9 @@ $ua->get('account/verify_credentials', {include_entities => 1}, sub {
 });
 
 $cv->begin;
-$ua->get('http://api.twitter.com/1/account/verify_credentials.json', {include_entities => 1}, sub {
+$ua->get('http://api.twitter.com/1/account/verify_credentials.json', {
+    include_entities => 1
+}, sub {
     my ($hdr, $res, $reason) = @_;
 
     is($res->{screen_name}, $screen_name, "account/verify_credentials");
