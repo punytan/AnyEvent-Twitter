@@ -153,7 +153,6 @@ sub get_request_token {
         consumer_secret => $args{consumer_secret},
         callback        => $args{callback_url},
     );
-    $req->sign;
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
@@ -190,7 +189,6 @@ sub get_access_token {
         token_secret    => $args{oauth_token_secret},
         verifier        => $args{oauth_verifier},
     );
-    $req->sign;
 
     AnyEvent::HTTP::http_request GET => $req->to_url, sub {
         my ($body, $header) = @_;
