@@ -288,12 +288,12 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
         sub {
             my ($hdr, $res, $reason) = @_;
 
-            unless ($res) {
-                print $reason, "\n";
-            } else {
+            if ($res) {
                 print "ratelimit-remaining : ", $hdr->{'x-ratelimit-remaining'}, "\n",
                       "x-ratelimit-reset   : ", $hdr->{'x-ratelimit-reset'}, "\n",
                       "screen_name         : ", $res->{screen_name}, "\n";
+            } else {
+                say $reason;
             }
             $cv->end;
         }
@@ -403,14 +403,19 @@ If something is wrong with the response from Twitter API, C<$response> will be C
     sub {
         my ($header, $response, $reason) = @_;
 
-        unless ($response) {
-            print $reason, "\n";
+        if ($response) {
+            say $response->{screen_name};
         } else {
-            print $response->{screen_name}, "\n";
+            say $reason;
         }
     }
 
 =back
+
+=head1 TESTS
+
+Most of all tests are written as author tests since this module depends on remote API server.
+So if you want read code that works well, take a look at C<xt/> directory.
 
 =head1 EXPERIMENTAL METHODS
 
