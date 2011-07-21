@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.62    Thu Jul 21 20:00:39 JST 2011
+        - documentation fix
+        - clean code up
+
 0.61    Wed Jul 20 06:12:29 JST 2011
         - remove deps: Net::Twitter::Lite
         - document get_access_token() and get_request_token()
