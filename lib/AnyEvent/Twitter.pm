@@ -10,6 +10,7 @@ use JSON;
 use URI;
 use URI::Escape;
 use Digest::SHA;
+use Time::Piece;
 use AnyEvent::HTTP;
 
 use Net::OAuth;
@@ -207,6 +208,12 @@ sub _parse_response {
     }
 
     return %query;
+}
+
+
+sub parse_timestamp { # Twitter uses weird created_at format: "Thu Mar 01 17:38:56 +0000 2012"
+    my ($class, $created_at) = @_;
+    localtime( Time::Piece->strptime($created_at, '%a %b %d %H:%M:%S %z %Y' )->epoch )
 }
 
 1;
@@ -409,6 +416,17 @@ If something is wrong with the response from Twitter API, C<$response> will be C
             say $reason;
         }
     }
+
+=back
+
+=head2 parse_timestamp
+
+C<parse_timestamp> parses C<created_at> timestamp like "Thu Mar 01 17:38:56 +0000 2012".
+It returns L<Time::Piece> object. Its timezone is localtime.
+
+=over 4
+
+=item C<< AnyEvent::Twitter->parse_timestamp($created_at) >>
 
 =back
 
