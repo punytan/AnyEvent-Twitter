@@ -9,6 +9,7 @@ requires 'AnyEvent'       => 5.34;
 requires 'AnyEvent::HTTP' => 2.12;
 requires 'URI'            => 1.58;
 requires 'URI::Escape'    => 3.30;
+requires 'Net::SSLeay'    => 1.35;
 
 tests 't/*.t';
 author_tests 'xt';

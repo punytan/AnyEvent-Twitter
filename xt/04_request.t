@@ -18,55 +18,100 @@ if (-f './xt/config.json') {
 
 my $screen_name = $config->{screen_name};
 
-my $ua = AnyEvent::Twitter->new(%$config);
+subtest 'v1.0' => sub {
+    my $ua = AnyEvent::Twitter->new(
+        %$config,
+        api_version => '1.0',
+    );
 
-my $cv = AE::cv;
+    my $cv = AE::cv;
 
-$cv->begin;
-$ua->request(
-    method => 'GET',
-    api    => 'account/verify_credentials',
-    sub {
-        my ($hdr, $res, $reason) = @_;
+    $cv->begin;
+    $ua->request(
+        method => 'GET',
+        api    => 'account/verify_credentials',
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{screen_name}, $screen_name, "account/verify_credentials");
+            $cv->end;
+        }
+    );
 
-        is($res->{screen_name}, $screen_name, "account/verify_credentials");
-        $cv->end;
-    }
-);
+    $cv->begin;
+    $ua->request(
+        method => 'POST',
+        api    => 'statuses/update',
+        params => { status => '(#`ω´)クポー クポー via api ' . scalar(localtime) . __LINE__ },
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{user}{screen_name}, $screen_name, "statuses/update");
+            $cv->end;
+        }
+    );
 
-$cv->begin;
-$ua->request(
-    method => 'POST',
-    api    => 'statuses/update',
-    params => {
-        status => '(#`ω´)クポー クポー via api ' . scalar(localtime),
-    },
-    sub {
-        my ($hdr, $res, $reason) = @_;
+    $cv->begin;
+    $ua->request(
+        method => 'POST',
+        url    => 'http://api.twitter.com/1/statuses/update.json',
+        params => { status => '(#`ω´)クポー クポー via url ' . time . __LINE__ },
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{user}{screen_name}, $screen_name, "update.json");
+            $cv->end;
+        }
+    );
 
-        is($res->{user}{screen_name}, $screen_name, "statuses/update");
+    $cv->recv;
+};
 
-        $cv->end;
-    }
-);
+subtest 'v1.1' => sub {
+    my $ua = AnyEvent::Twitter->new(
+        %$config,
+        api_version => '1.1',
+    );
 
-$cv->begin;
-$ua->request(
-    method => 'POST',
-    url    => 'http://api.twitter.com/1/statuses/update.json',
-    params => {
-        status => '(#`ω´)クポー クポー via url ' . time,
-    },
-    sub {
-        my ($hdr, $res, $reason) = @_;
+    my $cv = AE::cv;
 
-        is($res->{user}{screen_name}, $screen_name, "update.json");
+    $cv->begin;
+    $ua->request(
+        method => 'GET',
+        api    => 'account/verify_credentials',
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{screen_name}, $screen_name, "account/verify_credentials")
+                or note explain \@_;
+            $cv->end;
+        }
+    );
 
-        $cv->end;
-    }
-);
+    $cv->begin;
+    $ua->request(
+        method => 'POST',
+        api    => 'statuses/update',
+        params => { status => '(#`ω´)クポー クポー via api ' . scalar(localtime) . __LINE__ },
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{user}{screen_name}, $screen_name, "statuses/update")
+                or note explain \@_;
+            $cv->end;
+        }
+    );
 
-$cv->recv;
+    $cv->begin;
+    $ua->request(
+        method => 'POST',
+        url    => 'https://api.twitter.com/1.1/statuses/update.json',
+        params => { status => '(#`ω´)クポー クポー via url ' . time . __LINE__ },
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            is($res->{user}{screen_name}, $screen_name, "update.json")
+                or note explain \@_;
+            $cv->end;
+        }
+    );
+
+    $cv->recv;
+};
 
 done_testing();
 

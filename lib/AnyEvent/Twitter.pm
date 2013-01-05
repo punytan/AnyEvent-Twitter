@@ -28,9 +28,15 @@ our %PATH = (
     authenticate  => 'https://api.twitter.com/oauth/authenticate',
 );
 
+our %RESOURCE_URL_BASE = (
+    '1.0' => 'http://api.twitter.com/1/%s.json',
+    '1.1' => 'https://api.twitter.com/1.1/%s.json',
+);
+
 sub new {
     my ($class, %args) = @_;
 
+    $args{api_version}         ||= '1.1';
     $args{access_token}        ||= $args{token};
     $args{access_token_secret} ||= $args{token_secret};
 
@@ -68,7 +74,8 @@ sub request {
     ($opt{api} || $opt{url})
         or Carp::croak "'api' or 'url' option is required";
 
-    my $url = $opt{url} || 'http://api.twitter.com/1/' . $opt{api} . '.json';
+    my $url_base = $RESOURCE_URL_BASE{ $self->{api_version} };
+    my $url = $opt{url} || sprintf $url_base, $opt{api};
 
     ref $cb eq 'CODE'
         or Carp::croak "callback coderef is required";
@@ -95,7 +102,10 @@ sub request {
     my %req_params;
     if ($opt{method} eq 'POST') {
         $url = $req->normalized_request_url;
-        $req_params{body} = $req->to_post_body;
+        $req_params{body}    = $req->to_post_body;
+        $req_params{headers} = {
+            'Content-Type' => 'application/x-www-form-urlencoded', # FIXME
+        };
     } else {
         $url = $req->to_url;
     }
@@ -209,7 +219,6 @@ sub _parse_response {
 
     return %query;
 }
-
 
 sub parse_timestamp { # Twitter uses weird created_at format: "Thu Mar 01 17:38:56 +0000 2012"
     my ($class, $created_at) = @_;

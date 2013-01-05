@@ -18,54 +18,101 @@ if (-f './xt/config.json') {
 
 my $screen_name = $config->{screen_name};
 
-my $ua = AnyEvent::Twitter->new(
-    token           => $config->{access_token},
-    token_secret    => $config->{access_token_secret},
-    consumer_key    => $config->{consumer_key},
-    consumer_secret => $config->{consumer_secret},
-);
+subtest 'v1.0' => sub {
+    my $ua = AnyEvent::Twitter->new(
+        api_version     => '1.0',
+        token           => $config->{access_token},
+        token_secret    => $config->{access_token_secret},
+        consumer_key    => $config->{consumer_key},
+        consumer_secret => $config->{consumer_secret},
+    );
 
-my $cv = AE::cv;
+    my $cv = AE::cv;
 
-$cv->begin;
-$ua->get('account/verify_credentials', sub {
-    my ($hdr, $res, $reason) = @_;
+    $cv->begin;
+    $ua->get('account/verify_credentials', sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        $cv->end;
+    });
 
-    is($res->{screen_name}, $screen_name, "account/verify_credentials");
-    $cv->end;
-});
+    $cv->begin;
+    $ua->get('http://api.twitter.com/1/account/verify_credentials.json', sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        $cv->end;
+    });
 
-$cv->begin;
-$ua->get('http://api.twitter.com/1/account/verify_credentials.json', sub {
-    my ($hdr, $res, $reason) = @_;
+    $cv->begin;
+    $ua->get('account/verify_credentials', { include_entities => 1 }, sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        is(ref $res->{status}{entities}, 'HASH', 'include_entities');
+        $cv->end;
+    });
 
-    is($res->{screen_name}, $screen_name, "account/verify_credentials");
-    $cv->end;
-});
+    $cv->begin;
+    $ua->get('http://api.twitter.com/1/account/verify_credentials.json', { include_entities => 1 }, sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        is(ref $res->{status}{entities}, 'HASH', 'include_entities');
+        $cv->end;
+    });
 
-$cv->begin;
-$ua->get('account/verify_credentials', {include_entities => 1}, sub {
-    my ($hdr, $res, $reason) = @_;
+    $cv->recv;
+};
 
-    is($res->{screen_name}, $screen_name, "account/verify_credentials");
-    is(ref $res->{status}{entities}, 'HASH', 'include_entities');
-    $cv->end;
-});
+subtest 'v1.1' => sub {
+    my $ua = AnyEvent::Twitter->new(
+        api_version     => '1.1',
+        token           => $config->{access_token},
+        token_secret    => $config->{access_token_secret},
+        consumer_key    => $config->{consumer_key},
+        consumer_secret => $config->{consumer_secret},
+    );
 
-$cv->begin;
-$ua->get('http://api.twitter.com/1/account/verify_credentials.json', {
-    include_entities => 1
-}, sub {
-    my ($hdr, $res, $reason) = @_;
+    my $cv = AE::cv;
 
-    is($res->{screen_name}, $screen_name, "account/verify_credentials");
-    is(ref $res->{status}{entities}, 'HASH', 'include_entities');
-    $cv->end;
-});
+    $cv->begin;
+    $ua->get('account/verify_credentials', sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        $cv->end;
+    });
 
+    $cv->begin;
+    $ua->get('https://api.twitter.com/1.1/account/verify_credentials.json', sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        $cv->end;
+    });
 
-$cv->recv;
+    $cv->begin;
+    $ua->get('account/verify_credentials', { include_entities => 1 }, sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        is(ref $res->{status}{entities}, 'HASH', 'include_entities');
+        $cv->end;
+    });
+
+    $cv->begin;
+    $ua->get('https://api.twitter.com/1.1/account/verify_credentials.json', { include_entities => 1 }, sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        is(ref $res->{status}{entities}, 'HASH', 'include_entities');
+        $cv->end;
+    });
+
+    $cv->recv;
+};
 
 done_testing();
-
 
