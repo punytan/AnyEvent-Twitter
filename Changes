@@ -1,5 +1,10 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.63    Sun Jan  6 21:30:43 2013
+        - add parse_timestamp method
+        - support REST API Version 1.1
+        - support media uploading
+
 0.62    Thu Jul 21 20:00:39 JST 2011
         - documentation fix
         - clean code up
