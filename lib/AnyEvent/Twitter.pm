@@ -367,11 +367,17 @@ AnyEvent::Twitter - A thin wrapper for Twitter API using OAuth
 
 AnyEvent::Twitter is a very thin wrapper for Twitter API using OAuth.
 
+=head1 API VERSION
+
+As of version 0.63, L<AnyEvent::Twitter> supports Twitter REST API v1.1.
+
+NOTE: API version 1.0 is already deprecated.
+
 =head1 METHODS
 
 =head2 new
 
-All arguments are required.
+All arguments are required except C<api_version>.
 If you don't know how to obtain these parameters, take a look at eg/gen_token.pl and run it.
 
 =over 4
@@ -383,6 +389,11 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 =item C<access_token> (or C<token>)
 
 =item C<access_token_secret> (or C<token_secret>)
+
+=item C<api_version> (optional; default: 1.1)
+
+If you have a problem with API changes, specify C<api_version> parameter.
+Possible values are: C<1.1> or C<1.0>
 
 =back
 
@@ -408,7 +419,31 @@ If you don't know how to obtain these parameters, take a look at eg/gen_token.pl
 
 =item C<< $ua->post($url, \%params, sub {}) >>
 
+=item C<< $ua->post($api, \@params, sub {}) >>
+
+=item C<< $ua->post($url, \@params, sub {}) >>
+
 =back
+
+=head3 UPLOADING MEDIA FILE
+
+You can use C<statuses/update_with_media> API to upload photos by specifying parameters as arrayref like below example.
+
+Uploading photos will be tranferred with Content-Type C<multipart/form-data> (not C<application/x-www-form-urlencoded>)
+
+    use utf8;
+    $ua->post(
+        'statuses/update_with_media',
+        [
+            status    => '桜',
+            'media[]' => [ undef, $filename, Content => $loaded_image_binary ],
+        ],
+        sub {
+            my ($hdr, $res, $reason) = @_;
+            say $res->{user}{screen_name};
+        }
+    );
+
 
 =head2 request
 
@@ -424,9 +459,10 @@ If you want to specify the API C<url>, the C<url> parameter is good for you. The
 
 The C<api> parameter will be internally processed as:
 
-    $url = 'http://api.twitter.com/1/' . $opt{api} . '.json';
+    sprintf 'https://api.twitter.com/1.1/%s.json', $api; # version 1.1
+    sprintf 'http://api.twitter.com/1/%s.json',    $api; # version 1.0
 
-You can check available C<api>s at L<API Documentation|https://dev.twitter.com/docs/api>
+You can find available C<api>s at L<API Documentation|https://dev.twitter.com/docs/api>
 
 =item C<method> and C<params>
 
@@ -435,20 +471,25 @@ Then specify it. GET and POST methods are allowed. You can omit C<params> if Twi
 
 =item callback
 
-This module is AnyEvent::HTTP style, so you have to pass the callback (coderef).
+This module is L<AnyEvent::HTTP> style, so you have to pass the callback (coderef).
 
-Passed callback will be called with C<$header>, C<$response> and C<$reason>.
-If something is wrong with the response from Twitter API, C<$response> will be C<undef>. So you can check the value like below.
+Passed callback will be called with C<$header>, C<$response>, C<$reason> and C<$error_response>.
+If something is wrong with the response from Twitter API, C<$response> will be C<undef>.
+On non-2xx HTTP status code, you can get the decoded response via C<$error_response>.
+So you can check the value like below.
 
-    sub {
-        my ($header, $response, $reason) = @_;
+    my $callback = sub {
+        my ($header, $response, $reason, $error_response) = @_;
 
         if ($response) {
             say $response->{screen_name};
         } else {
             say $reason;
+            for my $error (@{$error_response->{errors}}) {
+                say "$error->{code}: $error->{message}";
+            }
         }
-    }
+    };
 
 =back
 
