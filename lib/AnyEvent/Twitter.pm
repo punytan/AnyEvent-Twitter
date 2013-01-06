@@ -12,6 +12,8 @@ use URI::Escape;
 use Digest::SHA;
 use Time::Piece;
 use AnyEvent::HTTP;
+use HTTP::Request::Common 'POST';
+use Data::Recursive::Encode;
 
 use Net::OAuth;
 use Net::OAuth::ProtectedResourceRequest;
@@ -80,45 +82,67 @@ sub request {
     ref $cb eq 'CODE'
         or Carp::croak "callback coderef is required";
 
-    $opt{params} ||= {};
-    ref $opt{params} eq 'HASH'
-        or Carp::croak "parameters must be hashref.";
+    my $params = $opt{params} || {};
+    my $is_multipart = ref $params eq 'ARRAY';
 
-    $opt{method} = uc $opt{method};
-    $opt{method} =~ /^(?:GET|POST)$/
+    my $method = uc $opt{method};
+    $method =~ /^(?:GET|POST)$/
         or Carp::croak "'method' option should be GET or POST";
 
     my $req = $self->_make_oauth_request(
         class => 'Net::OAuth::ProtectedResourceRequest',
         request_url     => $url,
-        request_method  => $opt{method},
-        extra_params    => $opt{params},
+        request_method  => $method,
+        extra_params    => ($is_multipart ? {} : $params),
         consumer_key    => $self->{consumer_key},
         consumer_secret => $self->{consumer_secret},
         token           => $self->{access_token},
         token_secret    => $self->{access_token_secret},
     );
 
-    my %req_params;
-    if ($opt{method} eq 'POST') {
+    my $req_params = {};
+
+    if ($method eq 'POST') {
         $url = $req->normalized_request_url;
-        $req_params{body}    = $req->to_post_body;
-        $req_params{headers} = {
-            'Content-Type' => 'application/x-www-form-urlencoded', # FIXME
-        };
+
+        if ($is_multipart) {
+            my $encoded_params = Data::Recursive::Encode::_apply(
+                sub { utf8::is_utf8($_[0]) ? Encode::encode_utf8($_[0]) : $_[0] },
+                {},
+                $params
+            );
+
+            my $ireq = POST(
+                $url,
+                Content_Type => 'multipart/form-data',
+                Content => [ @$encoded_params ]
+            );
+
+            $req_params->{body} = $ireq->content;
+            $req_params->{headers} = {
+                Authorization  => $req->to_authorization_header,
+                'Content-Type' => join "; ", $ireq->content_type,
+            };
+
+        } else {
+            $req_params->{body} = $req->to_post_body;
+            $req_params->{headers}{'Content-Type'} = 'application/x-www-form-urlencoded';
+        }
+
     } else {
         $url = $req->to_url;
     }
 
-    AnyEvent::HTTP::http_request $opt{method} => $url, %req_params, sub {
+    AnyEvent::HTTP::http_request $method => $url, %$req_params, sub {
         my ($body, $hdr) = @_;
 
+        local $@;
+        my $json = eval { JSON::decode_json($body) };
+
         if ($hdr->{Status} =~ /^2/) {
-            local $@;
-            my $json = eval { JSON::decode_json($body) };
             $cb->($hdr, $json, $@ ? "parse error: $@" : $hdr->{Reason});
         } else {
-            $cb->($hdr, undef, $hdr->{Reason});
+            $cb->($hdr, undef, $hdr->{Reason}, $json);
         }
     };
 

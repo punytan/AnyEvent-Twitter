@@ -30,16 +30,18 @@ subtest 'v1.0' => sub {
     my $cv = AE::cv;
 
     $cv->begin;
-    $ua->post('statuses/update', { status => 'いろはにほへと ' . time }, sub {
+    $ua->post('statuses/update', { status => 'いろはにほへと ' . time . rand }, sub {
         my ($hdr, $res, $reason) = @_;
-        is($res->{user}{screen_name}, $screen_name, "account/verify_credentials");
+        is($res->{user}{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
         $cv->end;
     });
 
     $cv->begin;
-    $ua->post('http://api.twitter.com/1/statuses/update.json', { status => 'いろはにほへと ' . rand }, sub {
+    $ua->post('http://api.twitter.com/1/statuses/update.json', { status => 'いろはにほへと ' . time . rand }, sub {
             my ($hdr, $res, $reason) = @_;
-            is($res->{user}{screen_name}, $screen_name, "account/verify_credentials");
+            is($res->{user}{screen_name}, $screen_name, "account/verify_credentials")
+                or note explain \@_;
             $cv->end;
         }
     );
@@ -59,19 +61,20 @@ subtest 'v1.1' => sub {
     my $cv = AE::cv;
 
     $cv->begin;
-    $ua->post('statuses/update', { status => 'いろはにほへと ' . time }, sub {
+    $ua->post('statuses/update', { status => 'いろはにほへと ' . time .rand }, sub {
         my ($hdr, $res, $reason) = @_;
-        is($res->{user}{screen_name}, $screen_name, "account/verify_credentials");
+        is($res->{user}{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
         $cv->end;
     });
 
     $cv->begin;
-    $ua->post('http://api.twitter.com/1/statuses/update.json', { status => 'いろはにほへと ' . rand }, sub {
-            my ($hdr, $res, $reason) = @_;
-            is($res->{user}{screen_name}, $screen_name, "account/verify_credentials");
-            $cv->end;
-        }
-    );
+    $ua->post('http://api.twitter.com/1.1/statuses/update.json', { status => 'いろはにほへと ' . time . rand }, sub {
+        my ($hdr, $res, $reason) = @_;
+        is($res->{user}{screen_name}, $screen_name, "account/verify_credentials")
+            or note explain \@_;
+        $cv->end;
+    });
 
     $cv->recv;
 };
