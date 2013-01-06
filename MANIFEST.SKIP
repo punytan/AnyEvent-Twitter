@@ -21,3 +21,4 @@
 \.sw[po]$
 ^xt/config\.json$
 ^xt/config-token-test\.json$
+^MYMETA\.
