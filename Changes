@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::Twitter
 
+0.64    Fri Jan 11 22:16:43 2013
+        - add deps (Time::Piece) 
+          Time::Piece was first released with perl v5.9.5
+
 0.63    Sun Jan  6 21:30:43 2013
         - add parse_timestamp method
         - support REST API Version 1.1

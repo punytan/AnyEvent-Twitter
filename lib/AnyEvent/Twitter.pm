@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use utf8;
 use 5.008;
-our $VERSION = '0.63';
+our $VERSION = '0.64';
 
 use Carp;
 use JSON;
