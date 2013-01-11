@@ -10,6 +10,7 @@ requires 'AnyEvent::HTTP' => 2.12;
 requires 'URI'            => 1.58;
 requires 'URI::Escape'    => 3.30;
 requires 'Net::SSLeay'    => 1.35;
+requires 'Time::Piece'    => 1.20;
 requires 'HTTP::Request::Common'   => 6.04;
 requires 'Data::Recursive::Encode' => 0.04;
 
